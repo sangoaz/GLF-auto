@@ -39,7 +39,7 @@ router = APIRouter(prefix="/admin", tags=["Parts"])
 
 
 # Enregistrer une nouvelle annonce de pièce détachée
-@router.get("/parts", status_code=201, response_model=PartRead)
+@router.post("/parts", status_code=201, response_model=PartRead)
 def create_part(
     part: PartCreate,
     session: Session = Depends(get_session),
@@ -47,9 +47,11 @@ def create_part(
 ):
     new_part = Part(**part.model_dump())
 
-    session.add(part)
+    session.add(new_part)
     session.commit()
     session.refresh(new_part)
+
+    return new_part
 
 
 # Liste des pièces en vente
@@ -107,6 +109,10 @@ def patch_part(
 
     existing_part.updated_at = datetime.now(timezone.utc)
 
+    session.commit()
+    session.refresh(existing_part)
+    return existing_part
+
 
 # =====================
 #   Images
@@ -139,7 +145,7 @@ def list_part_images(
 
 
 # Modifier la photo de couverture de l'annonce
-@router.patch("/part/{part_id}/images/{image_id}/cover", response_model=PartImageRead)
+@router.patch("/parts/{part_id}/images/{image_id}/cover", response_model=PartImageRead)
 def set_part_cover(
     part_id: int,
     image_id: int,

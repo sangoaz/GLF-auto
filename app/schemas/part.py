@@ -37,7 +37,7 @@ class PartRead(BaseModel):
     brand: str
     compatible_models: str
     condition: str
-    price: str
+    price: int
     description: str
     status: PartStatus
     is_featured: bool
@@ -56,7 +56,7 @@ class PublicPartRead(BaseModel):
     brand: str
     compatible_models: str
     condition: str
-    price: str
+    price: int
     description: str
     status: PartStatus
     images: list[PartImageRead] = []

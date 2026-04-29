@@ -1,4 +1,4 @@
-from passlib import Path
+from pathlib import Path
 from uuid import uuid4
 import shutil
 
@@ -25,7 +25,7 @@ def save_uploaded_image(file: UploadFile, subfolder: str) -> str:
     unique_filename = f"{uuid4().hex}{extension}"
     file_path = target_dir / unique_filename
 
-    with file_path.ope("wb") as buffer:
+    with file_path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     return f"/uploads/{subfolder}/{unique_filename}"

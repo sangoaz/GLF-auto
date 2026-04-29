@@ -27,7 +27,7 @@ def get_part_image_or_404(session: Session, part_id: int, image_id: int) -> Part
         PartImage.part_id == part_id,
     )
 
-    image = session.get(statement).first()
+    image = session.exec(statement).first()
 
     if not image:
         raise HTTPException(status_code=404, detail="Image introuvable")
