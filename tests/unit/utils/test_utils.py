@@ -1,4 +1,4 @@
-"""Tests unitaires : app/utils/vehicle.py, app/utils/part.py, app/utils/image.py"""
+"""Tests unitaires : app/utils/vehicle.py, app/utils/part.py, app/utils/image.py, app/utils/services.py, app/utils/messages.py"""
 
 import pytest
 from fastapi import HTTPException
@@ -8,12 +8,14 @@ from sqlmodel.pool import StaticPool
 from app.models.vehicle import Vehicle, VehicleImage
 from app.models.part import Part, PartImage
 from app.models.service import Service
+from app.models.contact_request import ContactRequest
+from app.models.trade_in_request import TradeInRequest
 from app.enums import FuelType, TransmissionType, VehicleStatus, PartStatus
 from app.utils.vehicle import get_vehicle_or_404
 from app.utils.part import get_part_or_404
 from app.utils.services import get_service_or_404
 from app.utils.image import get_vehicle_image_or_404, get_part_image_or_404
-
+from app.utils.messages import get_contact_request_or_404, get_trade_in_request_or_404
 
 # ──────────────────────────────────────────
 # Moteur SQLite en memoire local au fichier
@@ -115,6 +117,42 @@ def service_fixture(session):
     return s
 
 
+@pytest.fixture(name="contact_request")
+def contact_request_fixture(session):
+    cr = ContactRequest(
+        name="Roger Test",
+        email="roger@test.fr",
+        phone="06.06.06.07.08",
+        subject="Révision de ma clio 3",
+        message="Bonjour, combien prenez vous pour la révision d'un clio 3 diesel de 200000km",
+        is_read=False,
+    )
+    session.add(cr)
+    session.commit()
+    session.refresh(cr)
+    return cr
+
+
+@pytest.fixture(name="trade_in_request")
+def trade_in_fixture(session):
+    cr = TradeInRequest(
+        name="Roger Test Trade",
+        email="roger@test.fr",
+        phone="06.06.06.07.08",
+        brand="Renault",
+        model="Clio 3",
+        year="2007",
+        mileage="180000",
+        condition_note="Véhicule d'occasion, bien vécu",
+        message="Bonjour, combien me donneriez vous pour ma voiture ?",
+        is_read=False,
+    )
+    session.add(cr)
+    session.commit()
+    session.refresh(cr)
+    return cr
+
+
 # ──────────────────────────────────────────
 # Tests : get_vehicle_or_404
 # ──────────────────────────────────────────
@@ -211,5 +249,41 @@ class TestGetServiceOr404:
     def test_leve_404_si_inexistant(self, session):
         with pytest.raises(HTTPException) as exc_info:
             get_service_or_404(session, 99999)
+        assert exc_info.value.status_code == 404
+        assert "introuvable" in exc_info.value.detail.lower()
+
+
+# ──────────────────────────────────────────
+# Tests : get_contact_request_or_404
+# ──────────────────────────────────────────
+
+
+class TestGetContactRequestOr404:
+    def test_retourne_la_request_existante(self, session, contact_request):
+        result = get_contact_request_or_404(session, contact_request.id)
+        assert result.id == contact_request.id
+        assert result.name == "Roger Test"
+
+    def test_leve_404_si_inexistant(self, session):
+        with pytest.raises(HTTPException) as exc_info:
+            get_contact_request_or_404(session, 99999)
+        assert exc_info.value.status_code == 404
+        assert "introuvable" in exc_info.value.detail.lower()
+
+
+# ──────────────────────────────────────────
+# Tests : get_trade_in_request_or_404
+# ──────────────────────────────────────────
+
+
+class TestGetTradeInRequestOr404:
+    def test_retourne_le_trade_in_existant(self, session, trade_in_request):
+        result = get_trade_in_request_or_404(session, trade_in_request.id)
+        assert result.id == trade_in_request.id
+        assert result.name == "Roger Test Trade"
+
+    def test_leve_404_si_inexistant(self, session):
+        with pytest.raises(HTTPException) as exc_info:
+            get_trade_in_request_or_404(session, 99999)
         assert exc_info.value.status_code == 404
         assert "introuvable" in exc_info.value.detail.lower()
