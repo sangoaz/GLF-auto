@@ -33,3 +33,10 @@ class TransmissionType(str, Enum):
     MANUAL = "MANUAL"  # Boite manuelle
     AUTOMATIC = "AUTOMATIC"  # Boite auto classique
     SEMI_AUTOMATIC = "SEMI_AUTOMATIC"  # Robotisée / palettes
+
+
+class PartCondition(str, Enum):
+    NEW = "NEW"
+    USED_GOOD = "USED_GOOD"
+    USED_FAIR = "USED_FAIR"
+    FOR_PARTS = "FOR_PARTS"

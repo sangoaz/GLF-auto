@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import engine
 from app.routes.auth import router as auth_router
@@ -29,6 +30,15 @@ app = FastAPI(lifespan=lifespan)
 
 # Branchement du dossier des photos uploadés
 app.mount("/uploads", StaticFiles(directory="app/uploads"))
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Branchement des différentes routes du dossier routes
 app.include_router(auth_router)

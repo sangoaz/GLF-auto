@@ -2,17 +2,17 @@
 
 import pytest
 from fastapi.testclient import TestClient
-
+from app.enums import PartCondition, PartStatus
 
 PART_PAYLOAD = {
     "title": "Démarreur Renault Clio",
     "category": "Electricité",
     "brand": "Renault",
     "compatible_models": "Clio II, Clio III",
-    "condition": "Bon état",
+    "condition": PartCondition.USED_GOOD,
     "price": 45,
     "description": "Démarreur testé, fonctionnel.",
-    "status": "available",
+    "status": PartStatus.AVAILABLE,
     "is_featured": True,
     "is_published": True,
 }

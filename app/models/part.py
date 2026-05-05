@@ -3,7 +3,7 @@
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime, timezone
 
-from app.enums import PartStatus
+from app.enums import PartStatus, PartCondition
 
 
 class Part(SQLModel, table=True):
@@ -12,7 +12,7 @@ class Part(SQLModel, table=True):
     category: str
     brand: str
     compatible_models: str
-    condition: str
+    condition: PartCondition
     price: int
     description: str
     status: PartStatus = Field(default=PartStatus.AVAILABLE)

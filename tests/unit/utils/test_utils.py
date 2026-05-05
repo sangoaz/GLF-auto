@@ -10,7 +10,13 @@ from app.models.part import Part, PartImage
 from app.models.service import Service
 from app.models.contact_request import ContactRequest
 from app.models.trade_in_request import TradeInRequest
-from app.enums import FuelType, TransmissionType, VehicleStatus, PartStatus
+from app.enums import (
+    FuelType,
+    TransmissionType,
+    VehicleStatus,
+    PartStatus,
+    PartCondition,
+)
 from app.utils.vehicle import get_vehicle_or_404
 from app.utils.part import get_part_or_404
 from app.utils.services import get_service_or_404
@@ -62,7 +68,7 @@ def part_fixture(session):
         category="Electricite",
         brand="Peugeot",
         compatible_models="308",
-        condition="Bon",
+        condition=PartCondition.USED_GOOD,
         price=80,
         description="Test",
         status=PartStatus.AVAILABLE,

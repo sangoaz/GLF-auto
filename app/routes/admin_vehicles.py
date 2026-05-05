@@ -125,7 +125,7 @@ def patch_vehicle(
 # =====================
 
 
-# Afficher la liste des images de la pièce détachée
+# Afficher la liste des images du véhicule
 @router.get("/vehicles/{vehicle_id}/images", response_model=List[VehicleImageRead])
 def list_vehicle_images(
     vehicle_id: int,

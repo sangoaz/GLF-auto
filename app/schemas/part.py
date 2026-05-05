@@ -3,7 +3,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 
-from app.enums import PartStatus
+from app.enums import PartStatus, PartCondition
 from app.schemas.image import PartImageRead
 
 
@@ -12,7 +12,7 @@ class PartCreate(BaseModel):
     category: str
     brand: str
     compatible_models: str
-    condition: str
+    condition: PartCondition
     price: int
     description: str
 
@@ -22,7 +22,7 @@ class PartUpdate(BaseModel):
     category: str | None = None
     brand: str | None = None
     compatible_models: str | None = None
-    condition: str | None = None
+    condition: PartCondition | None = None
     price: int | None = Field(default=None, ge=0)
     description: str | None = None
     status: PartStatus | None = None
@@ -36,7 +36,7 @@ class PartRead(BaseModel):
     category: str
     brand: str
     compatible_models: str
-    condition: str
+    condition: PartCondition
     price: int
     description: str
     status: PartStatus
@@ -55,7 +55,7 @@ class PublicPartRead(BaseModel):
     category: str
     brand: str
     compatible_models: str
-    condition: str
+    condition: PartCondition
     price: int
     description: str
     status: PartStatus
