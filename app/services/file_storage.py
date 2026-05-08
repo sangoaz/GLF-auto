@@ -1,47 +1,64 @@
-from pathlib import Path
 from uuid import uuid4
-import shutil
+from pathlib import Path
+from fastapi import UploadFile, HTTPException
+from supabase import create_client
 
-from fastapi import HTTPException, UploadFile
-
-
-ALLOWED_IMAGE_EXTENSIOS = {".jpg", ".jpeg", ".png", ".webp"}
-UPLOAD_DIR = Path("uploads")
+from app.core.config import settings
 
 
-# Fonction d'enregistrement de fichiers en local
+ALLOWED_IMAGE_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/jpeg": ".jpeg",
+    "image/webp": ".webp",
+}
+
+
+supabase = create_client(
+    settings.SUPABASE_URL,
+    settings.SUPABASE_SERVICE_ROLE_KEY,
+)
+
+
 def save_uploaded_image(file: UploadFile, subfolder: str) -> str:
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="Fichier invalide")
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Format d'image non autorisé. Utilisez JPG, PNG ou WEBP.",
+        )
 
-    extension = Path(file.filename).suffix.lower()
+    extension = ALLOWED_IMAGE_TYPES[file.content_type]
+    filename = f"{uuid4()}{extension}"
+    storage_path = f"{subfolder}/{filename}"
 
-    if extension not in ALLOWED_IMAGE_EXTENSIOS:
-        raise HTTPException(status_code=400, detail="Format d'image non supporté")
+    content = file.file.read()
 
-    target_dir = UPLOAD_DIR / subfolder
-    target_dir.mkdir(parents=True, exist_ok=True)
+    supabase.storage.from_(settings.SUPABASE_BUCKET).upload(
+        path=storage_path,
+        file=content,
+        file_options={
+            "content-type": file.content_type,
+            "cache-control": "3600",
+            "upsert": "false",
+        },
+    )
 
-    unique_filename = f"{uuid4().hex}{extension}"
-    file_path = target_dir / unique_filename
+    public_url = supabase.storage.from_(settings.SUPABASE_BUCKET).get_public_url(
+        storage_path
+    )
 
-    with file_path.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    return f"/uploads/{subfolder}/{unique_filename}"
+    return public_url
 
 
-# Fonction de suppression de fichiers en local
 def delete_uploaded_file(file_url: str) -> None:
     """
-    Supprime un fichier stocké localement à partir de son URL publique.
-    Exemple: /uploads/vehicles/abc123.jpg
+    Supprime une image Supabase Storage à partir de son URL publique.
     """
-    if not file_url.startswith("/uploads/"):
-        return
+    try:
+        marker = f"/storage/v1/object/public/{settings.SUPABASE_BUCKET}/"
+        storage_path = file_url.split(marker)[1]
 
-    relative_path = file_url.removeprefix("/uploads/")
-    file_path = UPLOAD_DIR / relative_path
-
-    if file_path.exists() and file_path.is_file():
-        file_path.unlink()
+        supabase.storage.from_(settings.SUPABASE_BUCKET).remove([storage_path])
+    except Exception:
+        # On évite de casser toute la route si la suppression du fichier échoue.
+        pass

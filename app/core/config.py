@@ -17,5 +17,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    SUPABASE_URL: str
+    SUPABASE_SERVICE_ROLE_KEY: str
+    SUPABASE_BUCKET: str = "GLF-images"
+
 
 settings = Settings()
