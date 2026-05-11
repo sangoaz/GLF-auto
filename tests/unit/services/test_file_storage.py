@@ -1,19 +1,29 @@
-"""Tests unitaires : app/services/file_storage.py"""
+"""Tests unitaires : app/services/file_storage.py (Supabase)"""
 
 import pytest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 from fastapi import HTTPException
 
 from app.services.file_storage import save_uploaded_image, delete_uploaded_file
 
 
-def make_upload_file(filename: str, content: bytes = b"fake image data"):
-    """Helper pour créer un UploadFile mocké."""
+def make_upload_file(content_type: str, filename: str = "photo.jpg"):
     mock_file = MagicMock()
+    mock_file.content_type = content_type
     mock_file.filename = filename
     mock_file.file = MagicMock()
+    mock_file.file.read.return_value = b"fake image content"
     return mock_file
+
+
+def make_supabase_mock(
+    public_url="https://supabase.co/storage/v1/object/public/bucket/vehicles/abc.jpg",
+):
+    mock_supabase = MagicMock()
+    mock_bucket = MagicMock()
+    mock_supabase.storage.from_.return_value = mock_bucket
+    mock_bucket.get_public_url.return_value = public_url
+    return mock_supabase, mock_bucket
 
 
 # ──────────────────────────────────────────
@@ -22,70 +32,90 @@ def make_upload_file(filename: str, content: bytes = b"fake image data"):
 
 
 class TestSaveUploadedImage:
-    def test_extension_invalide_leve_400(self):
-        file = make_upload_file("document.pdf")
+    def test_content_type_invalide_leve_400(self):
+        file = make_upload_file("application/pdf")
         with pytest.raises(HTTPException) as exc_info:
             save_uploaded_image(file, "vehicles")
         assert exc_info.value.status_code == 400
-        assert "non supporté" in exc_info.value.detail.lower()
 
-    def test_filename_vide_leve_400(self):
-        file = make_upload_file("")
+    def test_message_erreur_content_type_invalide(self):
+        file = make_upload_file("application/pdf")
         with pytest.raises(HTTPException) as exc_info:
             save_uploaded_image(file, "vehicles")
-        assert exc_info.value.status_code == 400
-        assert "invalide" in exc_info.value.detail.lower()
-
-    def test_filename_none_leve_400(self):
-        file = make_upload_file(None)
-        with pytest.raises(HTTPException) as exc_info:
-            save_uploaded_image(file, "vehicles")
-        assert exc_info.value.status_code == 400
+        assert "autorisé" in exc_info.value.detail.lower()
 
     @pytest.mark.parametrize(
-        "filename",
+        "content_type,expected_ext",
         [
-            "photo.jpg",
-            "photo.jpeg",
-            "photo.png",
-            "photo.webp",
+            ("image/jpeg", ".jpg"),
+            ("image/png", ".png"),
+            ("image/webp", ".webp"),
         ],
     )
-    def test_extensions_valides_acceptees(self, filename, tmp_path):
-        """Toutes les extensions autorisées doivent être acceptées."""
-        file = make_upload_file(filename)
+    def test_content_types_valides_acceptes(self, content_type, expected_ext):
+        file = make_upload_file(content_type)
+        mock_supabase, mock_bucket = make_supabase_mock(
+            f"https://supabase.co/storage/v1/object/public/bucket/vehicles/abc{expected_ext}"
+        )
 
-        with patch("app.services.file_storage.UPLOAD_DIR", tmp_path), patch(
-            "shutil.copyfileobj"
-        ):
+        with patch("app.services.file_storage.supabase", mock_supabase):
             result = save_uploaded_image(file, "vehicles")
 
-        assert result.startswith("/uploads/vehicles/")
-        ext = Path(filename).suffix.lower()
-        assert result.endswith(ext)
+        assert result.endswith(expected_ext)
 
-    def test_retourne_un_chemin_unique(self, tmp_path):
-        """Deux uploads du même fichier doivent retourner des chemins différents."""
-        file1 = make_upload_file("photo.jpg")
-        file2 = make_upload_file("photo.jpg")
+    def test_retourne_url_publique_supabase(self):
+        file = make_upload_file("image/jpeg")
+        expected_url = (
+            "https://supabase.co/storage/v1/object/public/bucket/vehicles/abc.jpg"
+        )
+        mock_supabase, mock_bucket = make_supabase_mock(expected_url)
 
-        with patch("app.services.file_storage.UPLOAD_DIR", tmp_path), patch(
-            "shutil.copyfileobj"
-        ):
-            path1 = save_uploaded_image(file1, "vehicles")
-            path2 = save_uploaded_image(file2, "vehicles")
+        with patch("app.services.file_storage.supabase", mock_supabase):
+            result = save_uploaded_image(file, "vehicles")
 
-        assert path1 != path2
+        assert result == expected_url
 
-    def test_cree_le_sous_dossier_si_absent(self, tmp_path):
-        file = make_upload_file("photo.jpg")
+    def test_upload_appelle_supabase_storage(self):
+        file = make_upload_file("image/jpeg")
+        mock_supabase, mock_bucket = make_supabase_mock()
 
-        with patch("app.services.file_storage.UPLOAD_DIR", tmp_path), patch(
-            "shutil.copyfileobj"
-        ):
+        with patch("app.services.file_storage.supabase", mock_supabase):
             save_uploaded_image(file, "vehicles")
 
-        assert (tmp_path / "vehicles").exists()
+        mock_bucket.upload.assert_called_once()
+
+    def test_deux_uploads_ont_des_chemins_differents(self):
+        file1 = make_upload_file("image/jpeg")
+        file2 = make_upload_file("image/jpeg")
+        mock_supabase, mock_bucket = make_supabase_mock()
+
+        paths = []
+
+        def capture_upload(path, file, file_options):
+            paths.append(path)
+
+        mock_bucket.upload.side_effect = capture_upload
+
+        with patch("app.services.file_storage.supabase", mock_supabase):
+            save_uploaded_image(file1, "vehicles")
+            save_uploaded_image(file2, "vehicles")
+
+        assert paths[0] != paths[1]
+
+    def test_chemin_contient_le_subfolder(self):
+        file = make_upload_file("image/jpeg")
+        mock_supabase, mock_bucket = make_supabase_mock()
+        captured = {}
+
+        def capture_upload(path, file, file_options):
+            captured["path"] = path
+
+        mock_bucket.upload.side_effect = capture_upload
+
+        with patch("app.services.file_storage.supabase", mock_supabase):
+            save_uploaded_image(file, "vehicles")
+
+        assert captured["path"].startswith("vehicles/")
 
 
 # ──────────────────────────────────────────
@@ -94,36 +124,36 @@ class TestSaveUploadedImage:
 
 
 class TestDeleteUploadedFile:
-    def test_supprime_fichier_existant(self, tmp_path):
-        # Créer un vrai fichier temporaire
-        subfolder = tmp_path / "vehicles"
-        subfolder.mkdir()
-        fake_file = subfolder / "abc123.jpg"
-        fake_file.write_bytes(b"fake")
+    def test_supprime_fichier_existant(self):
+        mock_supabase, mock_bucket = make_supabase_mock()
+        url = "https://supabase.co/storage/v1/object/public/GLF-images/vehicles/abc.jpg"
 
-        with patch("app.services.file_storage.UPLOAD_DIR", tmp_path):
-            delete_uploaded_file("/uploads/vehicles/abc123.jpg")
+        with patch("app.services.file_storage.supabase", mock_supabase), patch(
+            "app.services.file_storage.settings"
+        ) as mock_settings:
+            mock_settings.SUPABASE_BUCKET = "GLF-images"
+            delete_uploaded_file(url)
 
-        assert not fake_file.exists()
+        mock_bucket.remove.assert_called_once_with(["vehicles/abc.jpg"])
 
-    def test_ignore_url_sans_prefix_uploads(self, tmp_path):
-        """Une URL qui ne commence pas par /uploads/ doit être ignorée silencieusement."""
-        with patch("app.services.file_storage.UPLOAD_DIR", tmp_path):
-            delete_uploaded_file("/media/vehicles/abc123.jpg")  # ne doit pas planter
+    def test_ne_plante_pas_si_url_invalide(self):
+        """Une URL sans le marqueur Supabase ne doit pas lever d'exception."""
+        mock_supabase, _ = make_supabase_mock()
 
-    def test_ignore_fichier_inexistant(self, tmp_path):
-        """Supprimer un fichier qui n'existe pas ne doit pas planter."""
-        with patch("app.services.file_storage.UPLOAD_DIR", tmp_path):
-            delete_uploaded_file("/uploads/vehicles/inexistant.jpg")
+        with patch("app.services.file_storage.supabase", mock_supabase), patch(
+            "app.services.file_storage.settings"
+        ) as mock_settings:
+            mock_settings.SUPABASE_BUCKET = "GLF-images"
+            delete_uploaded_file("https://autre-domaine.com/image.jpg")
 
-    def test_ignore_si_cest_un_dossier(self, tmp_path):
-        """Ne doit pas supprimer un dossier même si le chemin correspond."""
-        subfolder = tmp_path / "vehicles"
-        subfolder.mkdir()
-        fake_dir = subfolder / "monrepertoire"
-        fake_dir.mkdir()
+    def test_ne_plante_pas_si_supabase_echoue(self):
+        """Si Supabase lève une exception, la fonction doit l'avaler silencieusement."""
+        mock_supabase, mock_bucket = make_supabase_mock()
+        mock_bucket.remove.side_effect = Exception("Supabase error")
+        url = "https://supabase.co/storage/v1/object/public/GLF-images/vehicles/abc.jpg"
 
-        with patch("app.services.file_storage.UPLOAD_DIR", tmp_path):
-            delete_uploaded_file("/uploads/vehicles/monrepertoire")
-
-        assert fake_dir.exists()
+        with patch("app.services.file_storage.supabase", mock_supabase), patch(
+            "app.services.file_storage.settings"
+        ) as mock_settings:
+            mock_settings.SUPABASE_BUCKET = "GLF-images"
+            delete_uploaded_file(url)  # ne doit pas lever d'exception
