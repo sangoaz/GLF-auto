@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
+import logging
 
 from app.core.database import get_session
 from app.models.contact_request import ContactRequest
@@ -10,6 +11,8 @@ from app.schemas.contact_request import ContactRequestCreate, ContactRequestRead
 from app.services.email_service import send_contact_notification
 
 router = APIRouter(prefix="/contact", tags=["Public Contact"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("", response_model=ContactRequestRead, status_code=201)
@@ -25,7 +28,8 @@ def create_contact_request(
 
     try:
         send_contact_notification(new_contact)
-    except:
-        pass
+        logger.info("Email contact envoyé avec succès")
+    except Exception as e:
+        logger.exception("Erreur lors de l'envoi de l'email contact")
 
     return new_contact

@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
+import logging
 
 from app.core.database import get_session
 from app.models.trade_in_request import TradeInRequest
@@ -10,6 +11,8 @@ from app.schemas.trade_in_request import TradeInRequestCreate, TradeInRequestRea
 from app.services.email_service import send_trade_in_notification
 
 router = APIRouter(prefix="/trade-in", tags=["Public Trade In"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("", response_model=TradeInRequestRead, status_code=201)
@@ -25,7 +28,8 @@ def create_trade_in_request(
 
     try:
         send_trade_in_notification(new_trade_in)
+        logger.info("Email contact envoyé avec succès")
     except:
-        pass
+        logger.exception("Erreur lors de l'envoi de l'email de trade in request")
 
     return new_trade_in
