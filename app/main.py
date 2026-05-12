@@ -35,7 +35,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://glf-auto-frontend.vercel.app",
+        "https://glf-auto.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
