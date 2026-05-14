@@ -60,7 +60,8 @@ SMTP_ENV = {
 class TestSendEmail:
     def test_envoie_email_avec_config_complete(self):
         with patch("app.services.email_service.resend.api_key", "re_test"), patch(
-            "app.services.email_service.CONTACT_RECEIVER_EMAIL", "garage@glf.fr"
+            "app.services.email_service.CONTACT_RECEIVER_EMAILS",
+            "garage@glf.fr,admin@glf.fr",
         ), patch("app.services.email_service.resend.Emails.send") as mock_send:
 
             send_email("Sujet test", "Corps du message")
@@ -68,7 +69,7 @@ class TestSendEmail:
             mock_send.assert_called_once_with(
                 {
                     "from": "onboarding@resend.dev",
-                    "to": "garage@glf.fr",
+                    "to": ["garage@glf.fr", "admin@glf.fr"],
                     "subject": "Sujet test",
                     "text": "Corps du message",
                 }
@@ -83,12 +84,12 @@ class TestSendEmail:
 
     def test_leve_erreur_si_receiver_manquant(self):
         with patch("app.services.email_service.resend.api_key", "re_test"), patch(
-            "app.services.email_service.CONTACT_RECEIVER_EMAIL", None
+            "app.services.email_service.CONTACT_RECEIVER_EMAILS", ""
         ):
             with pytest.raises(RuntimeError) as exc_info:
                 send_email("Sujet", "Corps")
 
-            assert "email destinataire" in str(exc_info.value)
+            assert "destinataire" in str(exc_info.value)
 
 
 # ──────────────────────────────────────────

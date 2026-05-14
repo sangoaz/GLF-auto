@@ -13,20 +13,24 @@ load_dotenv()
 
 resend.api_key = os.getenv("RESEND_API_KEY")
 
-CONTACT_RECEIVER_EMAIL = os.getenv("CONTACT_RECEIVER_EMAIL")
+CONTACT_RECEIVER_EMAILS = os.getenv("CONTACT_RECEIVER_EMAIL", "")
 
 
 def send_email(subject: str, body: str) -> None:
     if not resend.api_key:
         raise RuntimeError("Configuration Resend incomplète")
 
-    if not CONTACT_RECEIVER_EMAIL:
-        raise RuntimeError("Adresse email destinataire manquante")
+    recipients = [
+        email.strip() for email in CONTACT_RECEIVER_EMAILS.split(",") if email.strip()
+    ]
+
+    if not recipients:
+        raise RuntimeError("Aucun destinataire configuré")
 
     resend.Emails.send(
         {
             "from": "onboarding@resend.dev",
-            "to": CONTACT_RECEIVER_EMAIL,
+            "to": recipients,
             "subject": subject,
             "text": body,
         }
