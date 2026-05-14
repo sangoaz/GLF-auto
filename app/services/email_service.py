@@ -13,7 +13,7 @@ load_dotenv()
 
 resend.api_key = os.getenv("RESEND_API_KEY")
 
-CONTACT_RECEIVER_EMAILS = os.getenv("CONTACT_RECEIVER_EMAIL", "")
+CONTACT_RECEIVER_EMAILS = os.getenv("CONTACT_RECEIVER_EMAILS", "")
 
 
 def send_email(subject: str, body: str) -> None:
