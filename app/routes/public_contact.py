@@ -26,10 +26,11 @@ def create_contact_request(
     session.commit()
     session.refresh(new_contact)
 
+    """
     try:
         send_contact_notification(new_contact)
         logger.info("Email contact envoyé avec succès")
     except Exception as e:
-        logger.exception("Erreur lors de l'envoi de l'email contact")
+        logger.exception("Erreur lors de l'envoi de l'email contact") """
 
     return new_contact

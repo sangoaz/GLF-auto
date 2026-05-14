@@ -26,10 +26,11 @@ def create_trade_in_request(
     session.commit()
     session.refresh(new_trade_in)
 
+    """
     try:
         send_trade_in_notification(new_trade_in)
         logger.info("Email contact envoyé avec succès")
     except:
-        logger.exception("Erreur lors de l'envoi de l'email de trade in request")
+        logger.exception("Erreur lors de l'envoi de l'email de trade in request") """
 
     return new_trade_in
