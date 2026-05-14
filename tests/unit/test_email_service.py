@@ -2,14 +2,18 @@
 
 import pytest
 from unittest.mock import patch, MagicMock
-from app.services.email_service import send_email, send_contact_notification, send_trade_in_notification
+from app.services.email_service import (
+    send_email,
+    send_contact_notification,
+    send_trade_in_notification,
+)
 from app.models.contact_request import ContactRequest
 from app.models.trade_in_request import TradeInRequest
-
 
 # ──────────────────────────────────────────
 # Fixtures
 # ──────────────────────────────────────────
+
 
 @pytest.fixture
 def contact():
@@ -52,48 +56,45 @@ SMTP_ENV = {
 # Tests : send_email
 # ──────────────────────────────────────────
 
+
 class TestSendEmail:
     def test_envoie_email_avec_config_complete(self):
-        with patch("app.services.email_service.SMTP_HOST", "smtp.example.com"), \
-             patch("app.services.email_service.SMTP_USERNAME", "user@example.com"), \
-             patch("app.services.email_service.SMTP_PASSWORD", "secret"), \
-             patch("app.services.email_service.CONTACT_RECEIVER_EMAIL", "garage@glf.fr"), \
-             patch("smtplib.SMTP") as mock_smtp:
-
-            mock_server = MagicMock()
-            mock_smtp.return_value.__enter__ = lambda s: mock_server
-            mock_smtp.return_value.__exit__ = MagicMock(return_value=False)
+        with patch("app.services.email_service.resend.api_key", "re_test"), patch(
+            "app.services.email_service.CONTACT_RECEIVER_EMAIL", "garage@glf.fr"
+        ), patch("app.services.email_service.resend.Emails.send") as mock_send:
 
             send_email("Sujet test", "Corps du message")
 
-            mock_server.starttls.assert_called_once()
-            mock_server.login.assert_called_once_with("user@example.com", "secret")
-            mock_server.send_message.assert_called_once()
+            mock_send.assert_called_once_with(
+                {
+                    "from": "onboarding@resend.dev",
+                    "to": "garage@glf.fr",
+                    "subject": "Sujet test",
+                    "text": "Corps du message",
+                }
+            )
 
     def test_leve_erreur_si_config_incomplete(self):
-        with patch("app.services.email_service.SMTP_HOST", None):
+        with patch("app.services.email_service.resend.api_key", None):
             with pytest.raises(RuntimeError) as exc_info:
                 send_email("Sujet", "Corps")
-            assert "SMTP" in str(exc_info.value)
 
-    def test_leve_erreur_si_smtp_username_manquant(self):
-        with patch("app.services.email_service.SMTP_HOST", "smtp.example.com"), \
-             patch("app.services.email_service.SMTP_USERNAME", None):
-            with pytest.raises(RuntimeError):
-                send_email("Sujet", "Corps")
+            assert "Resend" in str(exc_info.value)
 
     def test_leve_erreur_si_receiver_manquant(self):
-        with patch("app.services.email_service.SMTP_HOST", "smtp.example.com"), \
-             patch("app.services.email_service.SMTP_USERNAME", "user@example.com"), \
-             patch("app.services.email_service.SMTP_PASSWORD", "secret"), \
-             patch("app.services.email_service.CONTACT_RECEIVER_EMAIL", None):
-            with pytest.raises(RuntimeError):
+        with patch("app.services.email_service.resend.api_key", "re_test"), patch(
+            "app.services.email_service.CONTACT_RECEIVER_EMAIL", None
+        ):
+            with pytest.raises(RuntimeError) as exc_info:
                 send_email("Sujet", "Corps")
+
+            assert "email destinataire" in str(exc_info.value)
 
 
 # ──────────────────────────────────────────
 # Tests : send_contact_notification
 # ──────────────────────────────────────────
+
 
 class TestSendContactNotification:
     def test_appelle_send_email(self, contact):
@@ -119,6 +120,7 @@ class TestSendContactNotification:
 # ──────────────────────────────────────────
 # Tests : send_trade_in_notification
 # ──────────────────────────────────────────
+
 
 class TestSendTradeInNotification:
     def test_appelle_send_email(self, trade_in):

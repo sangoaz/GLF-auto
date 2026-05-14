@@ -1,8 +1,7 @@
 """Service d'envoie d'email"""
 
 import os
-import smtplib
-from email.message import EmailMessage
+import resend
 
 from dotenv import load_dotenv
 
@@ -11,32 +10,27 @@ from app.models.trade_in_request import TradeInRequest
 
 load_dotenv()
 
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USERNAME = os.getenv("SMTP_USERNAME")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+
+resend.api_key = os.getenv("RESEND_API_KEY")
+
 CONTACT_RECEIVER_EMAIL = os.getenv("CONTACT_RECEIVER_EMAIL")
 
 
 def send_email(subject: str, body: str) -> None:
-    if not all([SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD, CONTACT_RECEIVER_EMAIL]):
-        raise RuntimeError("Configuration SMTP incomplète")
+    if not resend.api_key:
+        raise RuntimeError("Configuration Resend incomplète")
 
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = SMTP_USERNAME
-    message["To"] = CONTACT_RECEIVER_EMAIL
-    message.set_content(body)
+    if not CONTACT_RECEIVER_EMAIL:
+        raise RuntimeError("Adresse email destinataire manquante")
 
-    if SMTP_PORT == 465:
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20) as smtp:
-            smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
-            smtp.send_message(message)
-    else:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as smtp:
-            smtp.starttls()
-            smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
-            smtp.send_message(message)
+    resend.Emails.send(
+        {
+            "from": "onboarding@resend.dev",
+            "to": CONTACT_RECEIVER_EMAIL,
+            "subject": subject,
+            "text": body,
+        }
+    )
 
 
 def send_contact_notification(contact: ContactRequest) -> None:
