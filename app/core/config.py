@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "GLF API"
-    debug: bool = True
+    debug: bool = False
 
     database_url: str
     secret_key: str
