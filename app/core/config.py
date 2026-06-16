@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_SERVICE_ROLE_KEY: str
     SUPABASE_BUCKET: str = "GLF-images"
+    RESEND_API_KEY: str
+    CONTACT_RECEIVER_EMAILS: str = ""
 
 
 settings = Settings()

@@ -1,19 +1,14 @@
 """Service d'envoie d'email"""
 
-import os
 import resend
-
-from dotenv import load_dotenv
+from app.core.config import settings
 
 from app.models.contact_request import ContactRequest
 from app.models.trade_in_request import TradeInRequest
 
-load_dotenv()
 
-
-resend.api_key = os.getenv("RESEND_API_KEY")
-
-CONTACT_RECEIVER_EMAILS = os.getenv("CONTACT_RECEIVER_EMAILS", "")
+resend.api_key = settings.RESEND_API_KEY
+CONTACT_RECEIVER_EMAILS = settings.CONTACT_RECEIVER_EMAILS
 
 
 def send_email(subject: str, body: str) -> None:
