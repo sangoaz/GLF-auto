@@ -1,9 +1,10 @@
 """Routes publiques relatives aux demandes de reprise"""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 import logging
 
+from app.main import limiter
 from app.core.database import get_session
 from app.models.trade_in_request import TradeInRequest
 from app.schemas.trade_in_request import TradeInRequestCreate, TradeInRequestRead
@@ -16,7 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("", response_model=TradeInRequestRead, status_code=201)
+@limiter.limit("5/minute")
 def create_trade_in_request(
+    request: Request,
     trade_in: TradeInRequestCreate,
     session: Session = Depends(get_session),
 ):
