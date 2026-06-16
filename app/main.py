@@ -47,9 +47,8 @@ app.add_middleware(
         "http://localhost:3000",
         "https://glf-auto.vercel.app",
     ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 
