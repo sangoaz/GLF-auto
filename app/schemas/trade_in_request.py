@@ -4,15 +4,15 @@ from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 
 class TradeInRequestCreate(BaseModel):
-    name: str
+    name: str = Field(max_length=100)
     email: EmailStr
-    phone: str
-    brand: str
-    model: str
+    phone: str = Field(max_length=20)
+    brand: str = Field(max_length=100)
+    model: str = Field(max_length=100)
     year: int = Field(ge=1900, le=2100)
     mileage: int = Field(ge=0)
-    condition_note: str
-    message: str
+    condition_note: str = Field(max_length=1000)
+    message: str = Field(max_length=2000)
 
 
 class TradeInRequestRead(BaseModel):

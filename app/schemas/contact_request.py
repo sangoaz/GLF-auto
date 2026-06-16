@@ -4,11 +4,11 @@ from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 
 class ContactRequestCreate(BaseModel):
-    name: str
+    name: str = Field(max_length=100)
     email: EmailStr
-    phone: str
-    subject: str
-    message: str
+    phone: str = Field(max_length=20)
+    subject: str = Field(max_length=200)
+    message: str = Field(max_length=2000)
 
 
 class ContactRequestRead(BaseModel):
