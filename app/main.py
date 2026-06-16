@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from sqlmodel import SQLModel
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,7 +7,6 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from app.core.limiter import limiter
 
-from app.core.database import engine
 from app.routes.auth import router as auth_router
 
 from app.routes.admin_messages import router as admin_messages_router
@@ -24,8 +22,6 @@ from app.routes.public_vehicles import router as public_vehicles_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    SQLModel.metadata.create_all(engine)
     yield
     # Shutdown
 
