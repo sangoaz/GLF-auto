@@ -29,7 +29,7 @@ def create_trade_in_request(
     try:
         send_trade_in_notification(new_trade_in)
         logger.info("Email contact envoyé avec succès")
-    except:
+    except Exception:
         logger.exception("Erreur lors de l'envoi de l'email de trade in request")
 
     return new_trade_in
