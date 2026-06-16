@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 import logging
 
-from app.main import limiter
+from app.core.limiter import limiter
 from app.core.database import get_session
 from app.models.trade_in_request import TradeInRequest
 from app.schemas.trade_in_request import TradeInRequestCreate, TradeInRequestRead

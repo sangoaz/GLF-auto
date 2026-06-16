@@ -5,9 +5,9 @@ from sqlmodel import Session
 import logging
 
 from app.core.database import get_session
+from app.core.limiter import limiter
 from app.models.contact_request import ContactRequest
 from app.schemas.contact_request import ContactRequestCreate, ContactRequestRead
-from app.main import limiter
 
 from app.services.email_service import send_contact_notification
 
