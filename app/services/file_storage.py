@@ -3,11 +3,13 @@ from pathlib import Path
 from fastapi import UploadFile, HTTPException
 from supabase import create_client
 
+import magic
+
 from app.core.config import settings
 
 
 ALLOWED_IMAGE_TYPES = {
-    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
     "image/png": ".png",
     "image/jpeg": ".jpeg",
     "image/webp": ".webp",
@@ -27,11 +29,22 @@ def save_uploaded_image(file: UploadFile, subfolder: str) -> str:
             detail="Format d'image non autorisé. Utilisez JPG, PNG ou WEBP.",
         )
 
+    content = file.file.read()
+
+    # On vérifie le vrai type du fichier
+    # magic.from_buffer() lit les premiers octets du fichier
+    # et retourne le vrai MIME type, indépendamment de ce que le client a déclaré
+    real_type = magic.from_buffer(content, mime=True)
+    if real_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Le contenu du fichier ne correspond pas à son type déclaré."
+        )
+
     extension = ALLOWED_IMAGE_TYPES[file.content_type]
     filename = f"{uuid4()}{extension}"
     storage_path = f"{subfolder}/{filename}"
 
-    content = file.file.read()
 
     supabase.storage.from_(settings.SUPABASE_BUCKET).upload(
         path=storage_path,
