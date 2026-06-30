@@ -1,168 +1,141 @@
-# GLF - Plateforme Garage
+# GLF Auto — Backend
+
+API backend pour [GLF Auto](https://glf-auto.vercel.app/), plateforme web développée pour un garage automobile permettant la gestion et la mise en vente de véhicules et pièces d'occasion. Le projet est **déployé en production** et utilisé par un client réel (petit garage automobile).
 
 ## Présentation
 
-Ce projet vise à créer une plateforme web pour un garage automobile, avec :
+GLF Auto centralise la gestion d'un garage automobile à travers deux interfaces :
 
-- Un site public pour les clients
-- Un espace d’administration privé pour le gérant
+- un **site public** où les clients consultent les véhicules et pièces disponibles, les services proposés, et peuvent faire une demande de contact ou de reprise de véhicule
+- un **espace d'administration** où le gérant gère l'ensemble du catalogue (véhicules, pièces, services), les photos associées, et les demandes entrantes
 
-## Fonctionnalités prévues (V1)
+Le client est un petit garage indépendant : le volume de trafic et de demandes reste donc modeste, mais l'application est pleinement fonctionnelle et utilisée en conditions réelles.
 
-### Côté visiteur (site public)
+## Fonctionnalités
 
-- Page d’accueil : présentation du garage, zone géographique, points forts, services principaux, accès rapide aux véhicules/pièces/reprise, bouton contact
-- Liste des services proposés
-- Consultation des véhicules d’occasion (listing + fiche détail)
-- Consultation des pièces d’occasion (listing + fiche détail)
+### Côté public
+
+- Présentation du garage et de ses services
+- Catalogue de véhicules d'occasion (listing + fiche détaillée)
+- Catalogue de pièces d'occasion (listing + fiche détaillée)
 - Formulaire de contact
 - Formulaire de demande de reprise de véhicule
 
-### Côté admin (espace privé)
+### Côté administration
 
-- Authentification (connexion sécurisée)
-- Gestion des véhicules d’occasion : ajouter, modifier, supprimer/masquer, publier/dépublier, marquer comme vendu, gestion des photos (ajout, ordre, image principale)
-- Gestion des pièces d’occasion : ajouter, modifier, supprimer, publier/dépublier, gestion des photos
+- Authentification sécurisée (JWT)
+- Gestion complète des véhicules : création, modification, suppression, publication/dépublication, statut vendu, gestion des photos (ajout, ordre, image principale)
+- Gestion complète des pièces : création, modification, suppression, publication, photos
 - Gestion des services affichés sur le site
-- Lecture des demandes de contact et de reprise
+- Consultation des demandes de contact et de reprise
 - Tableau de bord synthétique (nombre de véhicules/pièces publiés, demandes récentes)
 
 ## Stack technique
 
-- Backend : Python (FastAPI)
-- Base de données : (à préciser, probablement PostgreSQL ou SQLite)
-- ORM : SQLAlchemy
-- Validation : Pydantic
-- Authentification : JWT (JSON Web Token)
-- Gestion des fichiers : Stockage local (uploads/)
-- Tests : (à compléter, Pytest recommandé)
-- Frontend : (à développer, non inclus dans ce dépôt pour l’instant)
+- **Langage** : Python 3.11+
+- **Framework** : FastAPI
+- **Base de données** : PostgreSQL, hébergée sur Supabase
+- **ORM** : SQLAlchemy / SQLModel
+- **Migrations** : Alembic
+- **Validation des données** : Pydantic
+- **Authentification** : JWT (python-jose, passlib, bcrypt pour le hashage des mots de passe)
+- **Stockage de fichiers** : Supabase Storage (photos véhicules/pièces)
+- **Emails** : Resend (notifications de contact/reprise)
+- **Limitation de débit (rate limiting)** : SlowAPI
+- **Tests** : Pytest (présent dans le projet, à remettre à jour suite aux dernières évolutions)
 
-## Structure du projet
+## Architecture du projet
 
 ```
 app/
-  auth.py
+  main.py              # Point d'entrée FastAPI
+  auth.py              # Logique d'authentification
   enums.py
-  main.py
   core/
-    config.py
-    database.py
-    security.py
+    config.py           # Configuration (variables d'environnement, etc.)
+    database.py          # Connexion et session DB
+    security.py          # Hashage, gestion des tokens JWT
   deps/
-    auth.py
-  models/
-    contact_request.py
-    part.py
-    service.py
-    trade_in_request.py
-    user.py
-    vehicle.py
-  routes/
-    admin_messages.py
-    admin_parts.py
-    admin_services.py
-    admin_vehicles.py
-    auth.py
-    public_contact.py
-    public_parts.py
-    public_services.py
-    public_trade_in.py
-    public_vehicles.py
-  schemas/
-    auth.py
-    contact_request.py
-    image.py
-    part.py
-    service.py
-    trade_in_request.py
-    vehicle.py
-  services/
-    email_service.py
-    file_storage.py
-    image_service.py
-  uploads/
-    parts/
-    vehicles/
-  utils/
-    auth.py
-    image.py
-    part.py
-    vehicle.py
-tests/
-requirements.txt
-VERSION
-TODO.txt
+    auth.py              # Dépendances d'authentification (routes protégées)
+  models/                # Modèles SQLAlchemy (véhicules, pièces, services, utilisateurs, demandes)
+  routes/                # Endpoints API (admin et public, par ressource)
+  schemas/                # Schémas Pydantic (validation entrée/sortie)
+  services/                # Logique métier (emails, stockage de fichiers, traitement d'images)
+  uploads/                  # Fichiers reçus (legacy / fallback local)
+alembic/                  # Migrations de base de données
+tests/                     # Tests unitaires et d'intégration (Pytest)
 ```
 
-## Ce qui est déjà codé
-
-- Structure backend en Python (probablement FastAPI)
-- Modèles pour : véhicules, pièces, services, utilisateurs, demandes de contact, demandes de reprise
-- Routes pour : gestion admin/public des véhicules, pièces, services, messages, authentification
-- Services pour : gestion des emails, stockage de fichiers/images
-- Système d’authentification (admin)
-- Gestion des uploads (photos véhicules/pièces)
-- Schémas de validation (Pydantic)
-- Fichiers de configuration, sécurité, base de données
-
-## Ce qu’il reste à faire
-
-- Finaliser les pages frontend (site public + admin)
-- Intégrer les formulaires (contact, reprise)
-- Améliorer l’UI/UX (navigation, affichage, responsive)
-- Ajouter les tests automatisés
-- Rédiger la documentation utilisateur/admin
-- Déployer en production
-
-## Installation détaillée
+## Installation et lancement en local
 
 ### Prérequis
 
-- Python 3.9 ou supérieur
-- (Optionnel) PostgreSQL ou SQLite installé pour la base de données
-- (Optionnel) Outil de gestion d’environnement virtuel (venv, virtualenv, poetry...)
+- Python 3.11+
+- Une instance PostgreSQL accessible (ou un projet Supabase)
 
-### Étapes d’installation
+### Étapes
 
-1. Cloner le dépôt
+1. **Cloner le dépôt**
 
-```bash
-git clone <url-du-repo>
-cd GLF
-```
+   ```bash
+   git clone <url-du-repo>
+   cd GLF-auto
+   ```
 
-2. Créer et activer un environnement virtuel
+2. **Créer et activer un environnement virtuel**
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   ```
 
-3. Installer les dépendances
+3. **Installer les dépendances**
 
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-4. Configurer la base de données
+4. **Configurer les variables d'environnement**
 
-- Modifier les variables d’environnement ou le fichier config.py selon votre configuration (URL de la base, clés secrètes, etc.)
-- Créer la base de données si besoin
-- Lancer les migrations (si applicable)
-  (À compléter selon l’outil utilisé, ex : Alembic)
+   Créer un fichier `.env` à la racine avec, a minima :
 
-5. Démarrer le serveur
+   ```
+   DATABASE_URL=postgresql://user:password@host:port/dbname
+   SECRET_KEY=...
+   RESEND_API_KEY=...
+   ```
 
-```bash
-uvicorn app.main:app --reload
-```
+5. **Appliquer les migrations**
 
-6. Accéder à l’API
+   ```bash
+   alembic upgrade head
+   ```
 
-- Documentation interactive : http://localhost:8000/docs
-- API root : http://localhost:8000
+6. **Lancer le serveur**
 
-## TODO
+   ```bash
+   uvicorn app.main:app --reload
+   ```
 
-Voir le fichier `TODO.txt` pour la liste détaillée des tâches à venir.
+   L'API est disponible sur `http://localhost:8000`, avec une documentation interactive générée automatiquement sur `/docs`.
+
+## Déploiement
+
+Le projet est actuellement déployé en production, avec :
+
+- backend hébergé sur Render
+- frontend (Next.js) hébergé sur Vercel, voir le dépôt [GLF-auto-Frontend](https://github.com/sangoaz/GLF-auto-Frontend)
+- base de données et stockage de fichiers gérés via Supabase
+- frontend accessible sur [glf-auto.vercel.app](https://glf-auto.vercel.app/)
+
+## Pistes d'évolution
+
+- Compléter et automatiser la suite de tests (CI)
+- Statistiques avancées pour le tableau de bord admin (coûts, historique des ventes)
+- Export de données (CSV, PDF)
+- Application mobile dédiée pour la gestion côté gérant
+
+---
+
+**Auteur** : Kévin Fruchon (sangoaz)
+**Licence** : MIT
